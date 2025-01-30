@@ -2,9 +2,9 @@
 
 import torch
 import numpy as np
-from .likelihood import gaussian_likelihood
-from .prior import log_prior
-from src.utils.helpers import check_nans
+from .likelihood import *
+from .prior import *
+from src.utils.helpers import *
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -51,7 +51,6 @@ def langevin(x, z, means, lower_cholesky, weights, time, step_size, num_steps, m
     Perform Langevin dynamics for sampling latent variables.
     """
     z.requires_grad_(True)
-    acceptance_count = torch.zeros_like(torch.empty(z.shape[0], 1)).to(device)
     acceptance_rate_evol = []
     grad_energy_evol = []
 

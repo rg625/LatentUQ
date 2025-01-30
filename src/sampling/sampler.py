@@ -2,10 +2,10 @@
 
 import torch
 import numpy as np
-from .likelihood import gaussian_likelihood
-from .prior import log_prior
-from .posterior import log_post, grad_log, update_z, q_mala, langevin
-from src.utils.helpers import check_sampler, makedir, sample_p_data, check_nans
+from .likelihood import *
+from .prior import *
+from .posterior import *
+from src.utils.helpers import *
 from src.utils.logging_setup import setup_logging
 
 class Sampling:
@@ -45,7 +45,7 @@ class Sampling:
         self.sampler = sampler
         self.likelihood = likelihood
         self.dataset = 'toy'
-        self.plot = True
+        self.plot = False
         self.pushforward = pushforward
         self.G = self.init_model(G)
         self.GMM = GMM.to(self.device)
