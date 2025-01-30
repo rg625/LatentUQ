@@ -2,11 +2,11 @@
 
 import torch
 import numpy as np
-from sampling.likelihood import gaussian_likelihood
-from sampling.prior import log_prior
-from sampling.posterior import log_post, grad_log, update_z, q_mala, langevin
-from utils.helpers import check_sampler, makedir, sample_p_data, check_nans
-from utils.logging_setup import setup_logging
+from .likelihood import gaussian_likelihood
+from .prior import log_prior
+from .posterior import log_post, grad_log, update_z, q_mala, langevin
+from src.utils.helpers import check_sampler, makedir, sample_p_data, check_nans
+from src.utils.logging_setup import setup_logging
 
 class Sampling:
     """

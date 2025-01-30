@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-class _G1D(nn.Module):
+class G1D(nn.Module):
     def __init__(self, gmm_dim, nu=0.5, device='cpu'):
         super().__init__()
         self.gen_feature = 32

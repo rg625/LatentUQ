@@ -2,9 +2,9 @@
 
 import torch
 import numpy as np
-from sampling.likelihood import gaussian_likelihood
-from sampling.prior import log_prior
-from utils.helpers import check_nans
+from .likelihood import gaussian_likelihood
+from .prior import log_prior
+from src.utils.helpers import check_nans
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

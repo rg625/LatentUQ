@@ -5,7 +5,7 @@ import torch.nn.functional as F
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 
-class _GMM(nn.Module):
+class GMM(nn.Module):
     def __init__(self, components, dimensions=2, width = 1., std = 1.):
         super().__init__()
 
