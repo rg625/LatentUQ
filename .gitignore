@@ -1,0 +1,104 @@
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore log files
+*.log
+
+# Ignore virtual environment directories
+venv/
+env/
+.venv/
+.env/
+
+# Ignore temporary files and directories
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# Ignore caches
+.cache/
+*.cache
+
+# Ignore compiled files
+*.o
+*.so
+*.a
+*.out
+
+# Ignore images and videos
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.svg
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Ignore checkpoints
+checkpoints/
+*.ckpt
+*.pth
+
+# Ignore dataset files
+*.csv
+*.tsv
+*.data
+*.dat
+
+# Ignore configuration files
+*.cfg
+*.conf
+
+# Ignore binary files
+*.bin
+*.exe
+*.dll
+
+# Ignore archive files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+
+# Ignore IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore documentation files
+*.pdf
+*.doc
+*.docx
+*.ppt
+*.pptx
+*.xls
+*.xlsx
+*.html
+*.htm
+
+# Ignore temporary files created by editors
+*~
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Custom ignores
+# Add any custom patterns here
+# e.g., ignore specific directories or file types
