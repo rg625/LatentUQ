@@ -1,0 +1,7 @@
+data_dir: "path/to/data"
+batch_size: 100
+channels: 1
+sigma_y: 0.01
+gmm_dim: 5
+sampler: "ula"
+likelihood: "poisson"
