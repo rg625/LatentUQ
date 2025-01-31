@@ -61,14 +61,13 @@ To use LatentUQ, follow these steps:
 
 2. Run the main script:
     ```sh
-    python main.py
+    python main.py configs/config.yaml
+
     ```
 
 ## Configuration
 
 The configuration file (`configs/config.yaml`) should be placed in the `LatentUQ` directory. It should contain the following parameters:
-
-python main.py configs/config.yaml
 
 ### Instructions:
 
@@ -76,12 +75,5 @@ python main.py configs/config.yaml
    - Replace `https://github.com/rg625/LatentUQ.git` with the actual URL of your GitHub repository.
    - Replace `"path/to/data"` with the actual path to your data directory.
    - Update any other placeholders with actual details specific to your project.
-
-2. **Add Examples and Details:**
-   - Add more detailed examples in the "Examples" section if necessary.
-   - Provide additional usage instructions or configurations if required.
-
-3. **Customize as Needed:**
-   - Customize the README file to match your project's needs and provide the most relevant information to users and contributors.
 
 This README template provides a comprehensive overview of your project and should be useful for anyone looking to understand, use, or contribute to `LatentUQ`.
