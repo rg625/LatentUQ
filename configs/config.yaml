@@ -8,8 +8,9 @@ gmm_components: 2
 sampler: "ula"
 likelihood: "gauss"
 num_steps: 50
-step_size: 5e-2
+step_size: !!float 5e-2
 epochs: 1000
-lr_GMM: 1e-3
-lr_G: 1e-3
+lr_GMM: !!float 1e-3
+lr_G: !!float 1e-3
 plot: False
+testing: False
