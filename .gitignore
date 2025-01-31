@@ -52,12 +52,14 @@ env/
 checkpoints/
 *.ckpt
 *.pth
+*.pt
 
 # Ignore dataset files
 *.csv
 *.tsv
 *.data
 *.dat
+*.npy
 
 # Ignore configuration files
 *.cfg
