@@ -34,14 +34,13 @@ To install the LatentUQ package, follow these steps:
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/LatentUQ.git
+    git clone https://github.com/rg625/LatentUQ.git
     cd LatentUQ
     ```
 
 2. Create a virtual environment and activate it:
     ```sh
-    python -m venv venv
-    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+    conda env create -f environment.yaml
     ```
 
 3. Install the required dependencies:
@@ -51,7 +50,7 @@ To install the LatentUQ package, follow these steps:
 
 4. Install the package:
     ```sh
-    pip install .
+    pip install e .
     ```
 
 ## Usage
