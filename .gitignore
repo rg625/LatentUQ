@@ -102,6 +102,21 @@ checkpoints/
 *.swp
 *.swo
 
+
+# Ignore build directories
+build/
+dist/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.tox/
+.coverage
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.swp
 # Custom ignores
 # Add any custom patterns here
 # e.g., ignore specific directories or file types
