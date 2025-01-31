@@ -10,15 +10,14 @@ from src.utils.true_sampling import sample_function
 from src.utils.helpers import makedir
 from scipy.stats import norm
 
-def main():
+def main(config_path):
     # Add the project root directory to the PYTHONPATH
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     src_path = os.path.join(project_root, 'src')
     if src_path not in sys.path:
         sys.path.append(src_path)
 
-    # Load the configuration file from the parent directory
-    config_path = os.path.join(project_root, 'LatentUQ/configs', 'config.yaml')
+    # Load the configuration file from the provided path
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
@@ -109,4 +108,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) != 2:
+        print("Usage: python main.py <config_path>")
+        sys.exit(1)
+    config_path = sys.argv[1]
+    main(config_path)
