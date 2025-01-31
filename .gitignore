@@ -93,6 +93,7 @@ checkpoints/
 *.xlsx
 *.html
 *.htm
+*.txt
 
 # Ignore temporary files created by editors
 *~
