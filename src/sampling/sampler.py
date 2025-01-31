@@ -87,7 +87,7 @@ class Sampling:
             torch.Tensor: Posterior latent variables.
         """
         loss_gmm = -log_prior(z_post.detach(), means, lower_cholesky, weights).mean().to(self.device)
-        loss_g = -log_likelohood(x, z_post.detach(), time, self.G, self.pushforward, self.log_likelihood_sigma, self.testing).mean().to(self.device)
+        loss_g = -log_likelohood(x, z_post.detach(), time, self.G, self.pushforward, self.log_likelihood_sigma, self.testing, num_samples=1000).mean().to(self.device)
         return loss_gmm, loss_g, z_post
 
     def train(self, data, n_iter, batch_size, num_steps_post, step_size_post):

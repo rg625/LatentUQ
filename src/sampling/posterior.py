@@ -8,7 +8,7 @@ from src.utils.helpers import *
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def log_likelohood(x, z, time, model, pushforward, log_likelihood_sigma, testing=False):
+def log_likelohood(x, z, time, model, pushforward, log_likelihood_sigma, testing=False, num_samples = 300):
     """
     Compute the logarithm of the posterior distribution.
     """
