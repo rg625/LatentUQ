@@ -87,7 +87,7 @@ class Sampling:
             torch.Tensor: Posterior latent variables.
         """
         loss_gmm = -log_prior(z_post.detach(), means, lower_cholesky, weights).mean().to(self.device)
-        loss_g = -log_post(x, z_post.detach(), means, lower_cholesky, weights, time, self.G, self.pushforward, self.log_likelihood_sigma, self.testing).mean().to(self.device)
+        loss_g = -log_likelohood(x, z_post.detach(), time, self.G, self.pushforward, self.log_likelihood_sigma, self.testing).mean().to(self.device)
         return loss_gmm, loss_g, z_post
 
     def train(self, data, n_iter, batch_size, num_steps_post, step_size_post):
@@ -109,7 +109,7 @@ class Sampling:
         self.lr_scheduleGMM = torch.optim.lr_scheduler.ExponentialLR(self.optGMM, self.lrGMM_decay)
         self.lr_scheduleG = torch.optim.lr_scheduler.ExponentialLR(self.optG, self.lrG_decay)
 
-        dir_name = f'../{self.dataset}/{self.sampler}_{self.likelihood}/{num_steps_post}_{step_size_post}_lrGMM_{self.lrGMM}_lrG_{self.lrG}'
+        dir_name = f'{self.dataset}/{self.sampler}_{self.likelihood}/{num_steps_post}_{step_size_post}_lrGMM_{self.lrGMM}_lrG_{self.lrG}'
         makedir(dir_name)
 
         logger = setup_logging('job0', dir_name, console=True)
@@ -142,7 +142,7 @@ class Sampling:
                 prior_final, means, lower_cholesky, weights = self.GMM(batch_size)
                 post_final = langevin(x, prior_final, means, lower_cholesky, weights, self.time, step_size_post, num_steps_post, self.G, self.pushforward, self.log_likelihood_sigma, self.plot)[0]
 
-                prior_final = self.GMM(len(dataloader) * batch_size)[0]
+                # prior_final = self.GMM(len(dataloader) * batch_size)[0]
                 self.optG.zero_grad()
                 self.optGMM.zero_grad()
 

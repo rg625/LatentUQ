@@ -8,19 +8,26 @@ from src.utils.helpers import *
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def log_post(x, z, means, lower_cholesky, weights, time, model, pushforward, log_likelihood_sigma, testing=False):
+def log_likelohood(x, z, time, model, pushforward, log_likelihood_sigma, testing=False):
     """
     Compute the logarithm of the posterior distribution.
     """
     if testing:
         num_samples = 1
     else:
-        num_samples = 300
+        num_samples = 1
 
     a = model.sample_function(time, z, num_samples=num_samples)
     x = x.unsqueeze(0).expand(num_samples, -1, -1)
     log_p_y_given_z = gaussian_likelihood(x.squeeze(), pushforward(a), log_likelihood_sigma)
-    return torch.logsumexp(log_p_y_given_z, dim=0) + log_prior(z, means, lower_cholesky, weights)
+    return torch.logsumexp(log_p_y_given_z, dim=0)
+
+def log_post(x, z, means, lower_cholesky, weights, time, model, pushforward, log_likelihood_sigma, testing=False):
+    """
+    Compute the logarithm of the posterior distribution.
+    """
+
+    return log_likelohood(x, z, time, model, pushforward, log_likelihood_sigma, testing) + log_prior(z, means, lower_cholesky, weights)
 
 def grad_log(z, log_dist, max_value=1e3):
     """
@@ -46,34 +53,55 @@ def q_mala(z, z_proposed, grad_log, step_size):
     diff = z - z_proposed - step_size**2 * grad_log
     return -torch.norm(diff.view(z.shape[0], -1), dim=-1) ** 2 / (4 * step_size**2)
 
-def langevin(x, z, means, lower_cholesky, weights, time, step_size, num_steps, model, pushforward, log_likelihood_sigma, plot=False):
+def langevin(x, z, means, lower_cholesky, weights, time, step_size, num_steps, model, pushforward, log_likelihood_sigma, plot=False, sampler = 'ula'):
     """
     Perform Langevin dynamics for sampling latent variables.
     """
     z.requires_grad_(True)
+    acceptance_count = torch.zeros_like(torch.empty(z.shape[0], 1)).to(device)
     acceptance_rate_evol = []
     grad_energy_evol = []
 
-    check_sampler('ula')
+    check_sampler(sampler)
 
+    ULA_chain_z = torch.zeros((num_steps+1, *z.size() ))
+    ULA_chain_x = torch.zeros((num_steps+1, z.size(0), len(time)))
     if plot:
-        ULA_chain_z = torch.zeros((num_steps+1, *z.size()))
-        ULA_chain_x = torch.zeros((num_steps+1, z.size(0), len(time)))
         ULA_chain_z[0] = z.detach()
         ULA_chain_x[0] = model(z, time).detach()
 
-    average = []
+    average = torch.zeros((num_steps//2, *z.size())).to(device)
     for i in range(num_steps):
         log_dist = log_post(x, z, means, lower_cholesky, weights, time, model, pushforward, log_likelihood_sigma)
         grad_log_dist = grad_log(z, log_dist)
 
         grad_energy_evol.append(torch.norm(grad_log_dist, dim=-1).cpu().data.numpy())
 
-        z = update_z(z, step_size, grad_log_dist)
-        check_nans(z)
-        if num_steps - i < 10:
-            average.append(z)
+        if sampler == 'ula':  # If using the Unadjusted Langevin Algorithm (ULA)
+            z = update_z(z, step_size, grad_log_dist)
+            check_nans(z)
+            if num_steps-i<num_steps//2:
+                average[i-num_steps//2] = z
+        else:  # If using the Metropolis-Adjusted Langevin Algorithm (MALA)
+            z_proposed = update_z(z, step_size, grad_log_dist)
+            log_dist_new = log_post(x, z_proposed, means, lower_cholesky, weights, time, model, pushforward, log_likelihood_sigma)
+            grad_log_dist_new = grad_log(z_proposed, log_dist_new)
 
+            # Calculate the Metropolis-Hastings acceptance probability
+            log_alpha = (log_dist_new.view(-1, 1) - log_dist.view(-1, 1) +
+                        q_mala(z, z_proposed, grad_log_dist_new, step_size).view(-1, 1) -
+                        q_mala(z_proposed, z, grad_log_dist, step_size).view(-1, 1))
+
+            # Generate random values for acceptance test
+            log_u = torch.log(torch.rand(log_alpha.size()).to(device))
+
+            # Accept or reject the proposal based on the acceptance probability
+            accept = log_u < log_alpha
+            acceptance_count += accept
+            acceptance_rate_evol.append(acceptance_count.cpu().data.numpy())
+    
+            # Update the chain with the accepted proposals
+            z = torch.where(accept, z_proposed, z)
         if plot:
             ULA_chain_z[i+1] = z.detach()
             ULA_chain_x[i+1] = model(z, time).detach()
@@ -82,6 +110,6 @@ def langevin(x, z, means, lower_cholesky, weights, time, step_size, num_steps, m
     grad_energy_evol = np.array(grad_energy_evol)
     x_chain = ULA_chain_x.cpu().data.numpy()
     z_chain = ULA_chain_z.cpu().data.numpy()
-    z = torch.stack(average, dim=0).mean(dim=0)
+    z = average.mean(dim=0)
 
     return z.detach(), np.array(x_chain), np.array(z_chain), grad_energy_evol, acceptance_rate_evol
