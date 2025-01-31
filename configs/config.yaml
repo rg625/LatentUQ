@@ -1,7 +1,11 @@
-data_dir: "path/to/data"
+data_dir: "./data"
+dataset: "poisson"
 batch_size: 100
 channels: 1
 sigma_y: 0.01
 gmm_dim: 5
 sampler: "ula"
 likelihood: "gauss"
+lr_GMM: 1e-3
+lr_G: 1e-3
+plot: False
