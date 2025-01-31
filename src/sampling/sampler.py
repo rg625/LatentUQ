@@ -208,8 +208,8 @@ class Sampling:
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
 
-        x = sample_p_data(data, num_gen_samples)
-        x = self.normalize(x.squeeze())
+        x = sample_p_data(data, num_gen_samples).squeeze()
+        # x = self.normalize(x.squeeze())
         prior_final, means, lower_cholesky, weights = self.GMM(x.shape[0])
         self.testing = True
         self.plot = True

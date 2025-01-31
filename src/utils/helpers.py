@@ -9,6 +9,8 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import logging
 import sys
+import ot
+torch.set_default_dtype(torch.float64)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -53,9 +55,9 @@ def save_model(dir_name, epoch, model_name, E, optE, lr_scheduleE, G, optG, lr_s
 
 def load_model(dir_name, model_name, GMM, G):
         total_state_dict = torch.load(f'{dir_name}/ckpt/{model_name}.pth')
-        GMM.load_state_dict(total_state_dict['GMM'])
+        GMM.load_state_dict(total_state_dict['netE'])
         GMM.eval().to(device)
-        G.load_state_dict(total_state_dict['G'])
+        G.load_state_dict(total_state_dict['netG'])
         G.eval().to(device)
         return GMM, G
 
