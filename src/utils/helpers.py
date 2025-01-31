@@ -34,6 +34,7 @@ def makedir(dir_name):
     if os.path.exists(os.path.join(dir_name, 'ckpt')):
         print('Output directory already exists')
     else:
+        os.makedirs(os.path.join(dir_name, 'original_data'))
         os.makedirs(os.path.join(dir_name, 'ckpt'))
         os.makedirs(os.path.join(dir_name, 'samples'))
         os.makedirs(os.path.join(dir_name, 'chains'))
@@ -67,19 +68,6 @@ def check_nans(tensor):
     num_nans = torch.sum(nan_mask).item()
     if num_nans > 0:
         raise ValueError(f'There are {num_nans} NaN values in the tensor.')
-
-def savefig(sampler, likelihood, model, samples, num_steps_post, step_size_post, pixel, name):
-
-    grid_num = 10
-    
-    generated_priors = samples.view(grid_num*grid_num, 1, pixel, pixel).detach().cpu()
-    grid = torchvision.utils.make_grid(generated_priors, nrow=grid_num, padding=0)
-    
-    plt.imshow(grid.permute(1, 2, 0))
-    plt.axis('off')
-    plt.tight_layout()
-    plt.savefig(f'../visuals/{model}/{name}_{sampler}_{likelihood}_{num_steps_post}_{step_size_post}.png')
-    plt.close()
 
 def emd(set1, set2):
     """

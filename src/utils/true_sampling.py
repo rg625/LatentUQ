@@ -25,7 +25,7 @@ def compute_spectral_weights(gamma_scaling, ell, j, d, nu = 0.5):
     spectral_weights = torch.exp(0.5 * (gamma_scaling + log_spectral_weights))
     return spectral_weights
 
-def sample_true_function(
+def sample_function(
     t, 
     batch_size, 
     log_sigma=torch.log(torch.tensor(2.)), 
@@ -35,9 +35,7 @@ def sample_true_function(
     eps=1e-4, 
     d=1,
     num_samples = 1):
-    log_sigma = log_sigma*torch.ones(5000, 1, device=device)
-    ell = ell*torch.ones(5000, 1, device=device)
-    nu = nu*torch.ones(5000, 1, device=device)
+
     j = torch.pi * torch.arange(1, n_exp + 1, device=device).float()
 
     gamma_scaling = calculate_gamma_scaling(log_sigma, ell, d, nu, eps)
