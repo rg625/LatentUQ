@@ -165,7 +165,7 @@ class Sampling:
                 logger.info(f'Loss GMM: {loss_gmm.item():.3f}')
                 logger.info(f'Loss G: {loss_g.item():.3f}')
 
-            if epoch % 1 == 0:
+            if epoch % 10 == 0:
                 save_model(dir_name, epoch, f'{epoch}_model', self.GMM, self.optGMM, self.lr_scheduleGMM, self.G, self.optG, self.lr_scheduleG)
                 logger.info(f'Saved model at epoch {epoch}')
 
@@ -212,7 +212,7 @@ class Sampling:
         # x = self.normalize(x.squeeze())
         prior_final, means, lower_cholesky, weights = self.GMM(x.shape[0])
         self.testing = True
-        self.plot = True
+        self.plot = False
         post_final = langevin(x, prior_final, means, lower_cholesky, weights, self.time, step_size_post, num_steps_post, self.G, self.pushforward, self.log_likelihood_sigma, self.plot)[0]
 
         with torch.no_grad():

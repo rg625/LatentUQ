@@ -36,7 +36,7 @@ def makedir(dir_name):
     if os.path.exists(os.path.join(dir_name, 'ckpt')):
         print('Output directory already exists')
     else:
-        os.makedirs(os.path.join(dir_name, 'original_data'))
+        # os.makedirs(os.path.join(dir_name, 'original_data'))
         os.makedirs(os.path.join(dir_name, 'ckpt'))
         os.makedirs(os.path.join(dir_name, 'samples'))
         os.makedirs(os.path.join(dir_name, 'chains'))
@@ -55,9 +55,9 @@ def save_model(dir_name, epoch, model_name, E, optE, lr_scheduleE, G, optG, lr_s
 
 def load_model(dir_name, model_name, GMM, G):
         total_state_dict = torch.load(f'{dir_name}/ckpt/{model_name}.pth')
-        GMM.load_state_dict(total_state_dict['netE'])
+        GMM.load_state_dict(total_state_dict['GMM'])
         GMM.eval().to(device)
-        G.load_state_dict(total_state_dict['netG'])
+        G.load_state_dict(total_state_dict['G'])
         G.eval().to(device)
         return GMM, G
 

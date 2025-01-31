@@ -15,8 +15,9 @@ def log_likelohood(x, z, time, model, pushforward, log_likelihood_sigma, testing
     if testing:
         num_samples = 1
     else:
-        num_samples = 1
-
+        num_samples = 300
+    # print(num_samples)
+    # num_samples = 1
     a = model.sample_function(time, z, num_samples=num_samples)
     x = x.unsqueeze(0).expand(num_samples, -1, -1)
     log_p_y_given_z = gaussian_likelihood(x.squeeze(), pushforward(a), log_likelihood_sigma)
