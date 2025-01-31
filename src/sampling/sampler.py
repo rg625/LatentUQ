@@ -44,7 +44,7 @@ class Sampling:
         self.log_likelihood_sigma = torch.tensor(0.3, device=self.device)
         self.sampler = sampler
         self.likelihood = likelihood
-        self.dataset = 'toy'
+        self.dataset = 'poisson'
         self.plot = False
         self.pushforward = pushforward
         self.G = self.init_model(G)
@@ -202,11 +202,7 @@ class Sampling:
             logger.info(f'num_steps_prior, step_size_prior, num_steps_post, sampler {parameters}')
             self.train(data, n_iter, num_gen_samples, num_steps_post, step_size_post)
 
-        total_state_dict = torch.load(ckpt_path)
-        self.GMM.load_state_dict(total_state_dict['netE'])
-        self.GMM.eval().to(self.device)
-        self.G.load_state_dict(total_state_dict['netG'])
-        self.G.eval().to(self.device)
+        self.GMM, self.G = load_model(dir_name, f'{ckpt}_model', self.GMM, self.G)
 
         data_dir = os.path.join(dir_name, 'data')
         if not os.path.exists(data_dir):
@@ -216,6 +212,7 @@ class Sampling:
         x = self.normalize(x.squeeze())
         prior_final, means, lower_cholesky, weights = self.GMM(x.shape[0])
         self.testing = True
+        self.plot = True
         post_final = langevin(x, prior_final, means, lower_cholesky, weights, self.time, step_size_post, num_steps_post, self.G, self.pushforward, self.log_likelihood_sigma, self.plot)[0]
 
         with torch.no_grad():

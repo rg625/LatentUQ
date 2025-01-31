@@ -41,14 +41,22 @@ def makedir(dir_name):
 def save_model(dir_name, epoch, model_name, E, optE, lr_scheduleE, G, optG, lr_scheduleG):
     save_dict = {
         'epoch': epoch,
-        'netE': E.state_dict(),
-        'optE': optE.state_dict(),
-        'lr_scheduleE': lr_scheduleE.state_dict(),
-        'netG': G.state_dict(),
+        'GMM': E.state_dict(),
+        'optGMM': optE.state_dict(),
+        'lr_scheduleGMM': lr_scheduleE.state_dict(),
+        'G': G.state_dict(),
         'optG': optG.state_dict(),
         'lr_scheduleG': lr_scheduleG.state_dict()
     }
     torch.save(save_dict, f'{dir_name}/ckpt/{model_name}.pth')
+
+def load_model(dir_name, model_name, GMM, G):
+        total_state_dict = torch.load(f'{dir_name}/ckpt/{model_name}.pth')
+        GMM.load_state_dict(total_state_dict['GMM'])
+        GMM.eval().to(device)
+        G.load_state_dict(total_state_dict['G'])
+        G.eval().to(device)
+        return GMM, G
 
 def sample_p_data(data, num_gen_samples):
     sample = data[torch.LongTensor(num_gen_samples).random_(0, data.size(0))].detach()
@@ -72,3 +80,38 @@ def savefig(sampler, likelihood, model, samples, num_steps_post, step_size_post,
     plt.tight_layout()
     plt.savefig(f'../visuals/{model}/{name}_{sampler}_{likelihood}_{num_steps_post}_{step_size_post}.png')
     plt.close()
+
+def emd(set1, set2):
+    """
+    Compute the Earth Mover's Distance between two sets of functions.
+
+    Args:
+    set1 (torch.Tensor): A tensor of shape (M, N) where M is the number of functions in set1 and N is the number of points.
+    set2 (torch.Tensor): A tensor of shape (P, N) where P is the number of functions in set2 and N is the number of points.
+
+    Returns:
+    float: The Earth Mover's Distance between the two sets of functions.
+    """
+    
+    # Ensure that both sets are in the same device
+    if set1.device != set2.device:
+        set2 = set2.to(set1.device)
+
+    # Compute pairwise distances between the points in set1 and set2
+    # We use the Euclidean distance here as an example
+    cost_matrix = torch.cdist(set1, set2, p=2)
+
+    # Normalize cost_matrix as required by the ot.emd2 function
+    cost_matrix = cost_matrix.cpu().numpy()
+
+    # Uniform weights for the distributions
+    a = torch.ones(set1.size(0)) / set1.size(0)
+    b = torch.ones(set2.size(0)) / set2.size(0)
+
+    a = a.numpy()
+    b = b.numpy()
+
+    # Compute the Earth Mover's Distance using POT
+    emd_distance = ot.emd2(a, b, cost_matrix, numItermax=1000000)
+
+    return emd_distance
