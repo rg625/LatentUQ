@@ -94,6 +94,8 @@ checkpoints/
 *.html
 *.htm
 *.txt
+*.yaml
+*.yml
 
 # Ignore temporary files created by editors
 *~
