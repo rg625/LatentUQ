@@ -1,10 +1,10 @@
 data_dir: "data"
 dataset: "poisson"
-model: "cosine"
+model: "DeepONet"
 batch_size: 100
 channels: 1
 sigma_y: 0.01
-gmm_dim: 5
+gmm_dim: 10
 gmm_components: 2
 sampler: "ula"
 likelihood: "gauss"
@@ -12,6 +12,6 @@ num_steps: 50
 step_size: !!float 5e-2
 epochs: 1000
 lr_GMM: !!float 1e-3
-lr_G: !!float 1e-3
+lr_G: !!float 1e-2
 plot: False
 testing: False
