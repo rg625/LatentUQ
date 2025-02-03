@@ -4,4 +4,6 @@
 # Import classes to make them available directly from models
 from .gmm import GMM
 from .solvers import DarcySolver
-from .generator import G1D
+from .operator_generator import OrthogonalBasis
+from .cosine_generator import CosineBasis
+from .deeponet import DeepONet

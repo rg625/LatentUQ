@@ -1,13 +1,17 @@
-# src/sampling/prior.py
-
 import torch
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def log_prior(z, means, lower_cholesky, weights, eps=1e-6):
+def log_prior(**kwargs):
     """
     Compute the logarithm of the prior distribution.
     """
+    z = kwargs['z']
+    means = kwargs['means']
+    lower_cholesky = kwargs['lower_cholesky']
+    weights = kwargs['weights']
+    eps = kwargs.get('eps', 1e-6)
+
     log_weights = torch.log(weights)
     log_det_covs = torch.log(torch.diagonal(lower_cholesky, dim1=-2, dim2=-1)).sum(dim=-1)
     diff = z[:, None, :] - means[None, :, :]

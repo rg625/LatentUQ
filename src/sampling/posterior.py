@@ -1,5 +1,3 @@
-# src/sampling/posterior.py
-
 import torch
 import numpy as np
 from .likelihood import *
@@ -8,27 +6,52 @@ from src.utils.helpers import *
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def log_likelohood(x, z, time, model, pushforward, log_likelihood_sigma, testing=False, num_samples = 300):
+def log_likelohood(**kwargs):
     """
     Compute the logarithm of the posterior distribution.
     """
+    x = kwargs['x']
+    z = kwargs['z']
+    time = kwargs['time']
+    model = kwargs['model']
+    pushforward = kwargs['pushforward']
+    log_likelihood_sigma = kwargs['log_likelihood_sigma']
+    testing = kwargs.get('testing', False)
+    num_samples = kwargs.get('num_samples', 300)
+
     if testing:
         num_samples = 1
-    else:
-        num_samples = 300
-    # print(num_samples)
-    # num_samples = 1
+
+    # print(testing)
     a = model.sample_function(time, z, num_samples=num_samples)
     x = x.unsqueeze(0).expand(num_samples, -1, -1)
-    log_p_y_given_z = gaussian_likelihood(x.squeeze(), pushforward(a), log_likelihood_sigma)
+    log_p_y_given_z = gaussian_likelihood(x = x.squeeze(), x_hat = pushforward(a), sigma = log_likelihood_sigma)
     return torch.logsumexp(log_p_y_given_z, dim=0)
 
-def log_post(x, z, means, lower_cholesky, weights, time, model, pushforward, log_likelihood_sigma, testing=False):
+def log_post(**kwargs):
     """
     Compute the logarithm of the posterior distribution.
     """
+    x = kwargs['x']
+    z = kwargs['z']
+    means = kwargs['means']
+    lower_cholesky = kwargs['lower_cholesky']
+    weights = kwargs['weights']
+    time = kwargs['time']
+    model = kwargs['model']
+    pushforward = kwargs['pushforward']
+    log_likelihood_sigma = kwargs['log_likelihood_sigma']
+    testing = kwargs.get('testing', False)
 
-    return log_likelohood(x, z, time, model, pushforward, log_likelihood_sigma, testing) + log_prior(z, means, lower_cholesky, weights)
+    return log_likelohood(
+        x=x,
+        z=z,
+        time=time,
+        model=model,
+        pushforward=pushforward,
+        log_likelihood_sigma=log_likelihood_sigma,
+        testing=testing
+    ) + log_prior(z = z, means = means, lower_cholesky = lower_cholesky, weights = weights)
 
 def grad_log(z, log_dist, max_value=1e3):
     """
@@ -54,10 +77,25 @@ def q_mala(z, z_proposed, grad_log, step_size):
     diff = z - z_proposed - step_size**2 * grad_log
     return -torch.norm(diff.view(z.shape[0], -1), dim=-1) ** 2 / (4 * step_size**2)
 
-def langevin(x, z, means, lower_cholesky, weights, time, step_size, num_steps, model, pushforward, log_likelihood_sigma, plot=False, sampler = 'ula'):
+def langevin(**kwargs):
     """
     Perform Langevin dynamics for sampling latent variables.
     """
+    x = kwargs['x']
+    z = kwargs['z']
+    means = kwargs['means']
+    lower_cholesky = kwargs['lower_cholesky']
+    weights = kwargs['weights']
+    time = kwargs['time']
+    step_size = kwargs['step_size']
+    num_steps = kwargs['num_steps']
+    model = kwargs['model']
+    pushforward = kwargs['pushforward']
+    log_likelihood_sigma = kwargs['log_likelihood_sigma']
+    plot = kwargs.get('plot', False)
+    sampler = kwargs.get('sampler', 'ula')
+    testing = kwargs.get('testing', False)
+
     z.requires_grad_(True)
     acceptance_count = torch.zeros_like(torch.empty(z.shape[0], 1)).to(device)
     acceptance_rate_evol = []
@@ -73,7 +111,17 @@ def langevin(x, z, means, lower_cholesky, weights, time, step_size, num_steps, m
 
     average = torch.zeros((num_steps//2, *z.size())).to(device)
     for i in range(num_steps):
-        log_dist = log_post(x, z, means, lower_cholesky, weights, time, model, pushforward, log_likelihood_sigma)
+        log_dist = log_post(
+            x=x,
+            z=z,
+            means=means,
+            lower_cholesky=lower_cholesky,
+            weights=weights,
+            time=time,
+            model=model,
+            pushforward=pushforward,
+            log_likelihood_sigma=log_likelihood_sigma,
+            testing=testing)
         grad_log_dist = grad_log(z, log_dist)
 
         grad_energy_evol.append(torch.norm(grad_log_dist, dim=-1).cpu().data.numpy())
@@ -85,7 +133,18 @@ def langevin(x, z, means, lower_cholesky, weights, time, step_size, num_steps, m
                 average[i-num_steps//2] = z
         else:  # If using the Metropolis-Adjusted Langevin Algorithm (MALA)
             z_proposed = update_z(z, step_size, grad_log_dist)
-            log_dist_new = log_post(x, z_proposed, means, lower_cholesky, weights, time, model, pushforward, log_likelihood_sigma)
+            log_dist_new = log_post(
+                x=x,
+                z=z_proposed,
+                means=means,
+                lower_cholesky=lower_cholesky,
+                weights=weights,
+                time=time,
+                model=model,
+                pushforward=pushforward,
+                log_likelihood_sigma=log_likelihood_sigma,
+                testing=testing
+            )
             grad_log_dist_new = grad_log(z_proposed, log_dist_new)
 
             # Calculate the Metropolis-Hastings acceptance probability

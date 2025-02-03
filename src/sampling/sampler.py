@@ -1,5 +1,3 @@
-# src/sampling/sampler.py
-
 import torch
 import numpy as np
 from .likelihood import *
@@ -70,7 +68,7 @@ class Sampling:
         """
         return model.apply(weights_init_xavier).to(self.device)
 
-    def loss(self, z_post, x, means, lower_cholesky, weights, time):
+    def loss(self, **kwargs):
         """
         Compute the loss components for training the generative model.
 
@@ -86,11 +84,31 @@ class Sampling:
             torch.Tensor: Negative log likelihood loss.
             torch.Tensor: Posterior latent variables.
         """
-        loss_gmm = -log_prior(z_post.detach(), means, lower_cholesky, weights).mean().to(self.device)
-        loss_g = -log_likelohood(x, z_post.detach(), time, self.G, self.pushforward, self.log_likelihood_sigma, self.testing, num_samples=1000).mean().to(self.device)
-        return loss_gmm, loss_g, z_post
+        z_post = kwargs['z_post']
+        x = kwargs['x']
+        means = kwargs['means']
+        lower_cholesky = kwargs['lower_cholesky']
+        weights = kwargs['weights']
+        time = kwargs['time']
 
-    def train(self, data, n_iter, batch_size, num_steps_post, step_size_post):
+        loss_gmm = -log_prior(z=z_post.detach(), 
+                              means=means, 
+                              lower_cholesky=lower_cholesky, 
+                              weights=weights).mean().to(self.device)
+        loss_g = -log_likelohood(x=x,
+                                 z=z_post.detach(),
+                                 time=time,
+                                 model=self.G,
+                                 pushforward=self.pushforward,
+                                 log_likelihood_sigma=self.log_likelihood_sigma,
+                                 testing=self.testing,
+                                 num_samples=1000).mean().to(self.device)
+        
+        loss_g = loss_g #+ smoothness_loss(self.G(z_post.detach(), time, num_samples=1))
+        
+        return loss_gmm, loss_g
+
+    def train(self, **kwargs):
         """
         Train the generative and encoder models using the specified training parameters.
 
@@ -104,6 +122,12 @@ class Sampling:
         Returns:
             torch.Tensor: Updated posterior latent variables.
         """
+        data = kwargs['data']
+        n_iter = kwargs['n_iter']
+        batch_size = kwargs['batch_size']
+        num_steps_post = kwargs['num_steps_post']
+        step_size_post = kwargs['step_size_post']
+
         self.optG = torch.optim.Adam(self.G.parameters(), lr=self.lrG, weight_decay=1e-5, betas=(0.5, 0.999))
         self.optGMM = torch.optim.Adam(self.GMM.parameters(), lr=self.lrGMM, weight_decay=1e-5, betas=(0.5, 0.999))
         self.lr_scheduleGMM = torch.optim.lr_scheduler.ExponentialLR(self.optGMM, self.lrGMM_decay)
@@ -140,13 +164,12 @@ class Sampling:
 
                 x = x.view(batch_size, -1).to(self.device)
                 prior_final, means, lower_cholesky, weights = self.GMM(batch_size)
-                post_final = langevin(x, prior_final, means, lower_cholesky, weights, self.time, step_size_post, num_steps_post, self.G, self.pushforward, self.log_likelihood_sigma, self.plot)[0]
+                post_final = langevin(x=x, z=prior_final, means=means, lower_cholesky=lower_cholesky, weights=weights, time=self.time, step_size=step_size_post, num_steps=num_steps_post, model=self.G, pushforward=self.pushforward, log_likelihood_sigma=self.log_likelihood_sigma, plot=self.plot)[0]
 
-                # prior_final = self.GMM(len(dataloader) * batch_size)[0]
                 self.optG.zero_grad()
                 self.optGMM.zero_grad()
 
-                loss_gmm, loss_g, z_post = self.loss(post_final, x, means, lower_cholesky, weights, self.time)
+                loss_gmm, loss_g = self.loss(z_post=post_final, x=x, means=means, lower_cholesky=lower_cholesky, weights=weights, time=self.time)
                 loss_g.backward()
                 self.optG.step()
 
@@ -165,19 +188,19 @@ class Sampling:
                 logger.info(f'Loss GMM: {loss_gmm.item():.3f}')
                 logger.info(f'Loss G: {loss_g.item():.3f}')
 
-            if epoch % 10 == 0:
+            if epoch % 1 == 0:
+                save_model(dir_name, epoch, 'last_model', self.GMM, self.optGMM, self.lr_scheduleGMM, self.G, self.optG, self.lr_scheduleG)
+                logger.info(f'Saved model at epoch {epoch}')
+            elif epoch % 10 == 0:
                 save_model(dir_name, epoch, f'{epoch}_model', self.GMM, self.optGMM, self.lr_scheduleGMM, self.G, self.optG, self.lr_scheduleG)
                 logger.info(f'Saved model at epoch {epoch}')
-
             self.lr_scheduleGMM.step()
             self.lr_scheduleG.step()
 
         np.save(f'{dir_name}/chains/loss_gmm.npy', np.array(self.loss_gmm_save))
         np.save(f'{dir_name}/chains/loss_g.npy', np.array(self.loss_g_save))
 
-        return z_post.detach()
-
-    def generate_samples(self, data, num_gen_samples, n_iter, num_steps_post, step_size_post, ckpt):
+    def generate_samples(self, **kwargs):
         """
         Generate samples using Langevin dynamics and the trained generative model.
 
@@ -193,6 +216,13 @@ class Sampling:
             np.ndarray: Generated samples from the prior distribution.
             np.ndarray: Generated samples from the posterior distribution.
         """
+        data = kwargs['data']
+        num_gen_samples = kwargs['num_gen_samples']
+        n_iter = kwargs['n_iter']
+        num_steps_post = kwargs['num_steps_post']
+        step_size_post = kwargs['step_size_post']
+        ckpt = kwargs['ckpt']
+
         dir_name = f'../{self.dataset}/{self.sampler}_{self.likelihood}/{num_steps_post}_{step_size_post}_lrGMM_{self.lrGMM}_lrG_{self.lrG}'
         ckpt_path = os.path.join(dir_name, f'ckpt/{ckpt}_model.pth')
         if not os.path.exists(ckpt_path):
@@ -200,7 +230,7 @@ class Sampling:
             logger = setup_logging('job0', dir_name, console=True)
             parameters = ['gmm', num_steps_post, step_size_post]
             logger.info(f'num_steps_prior, step_size_prior, num_steps_post, sampler {parameters}')
-            self.train(data, n_iter, num_gen_samples, num_steps_post, step_size_post)
+            self.train(data=data, n_iter=n_iter, batch_size=num_gen_samples, num_steps_post=num_steps_post, step_size_post=step_size_post)
 
         self.GMM, self.G = load_model(dir_name, f'{ckpt}_model', self.GMM, self.G)
 
@@ -213,7 +243,19 @@ class Sampling:
         prior_final, means, lower_cholesky, weights = self.GMM(x.shape[0])
         self.testing = True
         self.plot = False
-        post_final = langevin(x, prior_final, means, lower_cholesky, weights, self.time, step_size_post, num_steps_post, self.G, self.pushforward, self.log_likelihood_sigma, self.plot)[0]
+        post_final = langevin(x=x, 
+                              z=prior_final, 
+                              means=means, 
+                              lower_cholesky=lower_cholesky, 
+                              weights=weights, 
+                              time=self.time, 
+                              step_size=step_size_post, 
+                              num_steps=num_steps_post, 
+                              model=self.G, 
+                              pushforward=self.pushforward, 
+                              log_likelihood_sigma=self.log_likelihood_sigma, 
+                              plot=self.plot,
+                              testing=self.testing)[0]
 
         with torch.no_grad():
             output_prior = self.G(prior_final, self.time).squeeze()

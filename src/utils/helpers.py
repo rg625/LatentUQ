@@ -36,7 +36,6 @@ def makedir(dir_name):
     if os.path.exists(os.path.join(dir_name, 'ckpt')):
         print('Output directory already exists')
     else:
-        # os.makedirs(os.path.join(dir_name, 'original_data'))
         os.makedirs(os.path.join(dir_name, 'ckpt'))
         os.makedirs(os.path.join(dir_name, 'samples'))
         os.makedirs(os.path.join(dir_name, 'chains'))
@@ -105,3 +104,12 @@ def emd(set1, set2):
     emd_distance = ot.emd2(a, b, cost_matrix, numItermax=1000000)
 
     return emd_distance
+
+
+def smoothness_loss(outputs):
+    """
+    Computes a smoothness loss by penalizing large time derivatives.
+    """
+    diff = outputs[:, 1:] - outputs[:, :-1]  # Finite difference
+    loss = torch.mean(diff**2)  # Penalize large derivatives
+    return loss

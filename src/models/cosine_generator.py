@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-class G1D(nn.Module):
+class CosineBasis(nn.Module):
     def __init__(self, gmm_dim, nu=0.5, device='cpu'):
         super().__init__()
         self.gen_feature = 32
@@ -32,7 +32,6 @@ class G1D(nn.Module):
         self.eps = torch.tensor(1e-4, device=device)
         self.num_expansion = 30
         self.to(device)
-
 
     def mean(self, x, t):
         return torch.zeros_like(t).to(device)
