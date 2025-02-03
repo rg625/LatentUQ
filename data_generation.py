@@ -6,7 +6,7 @@ import torch
 from src.models import DarcySolver
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-from src.utils.true_sampling import sample_function
+from src.utils.true_sampling import sample_true_function
 from src.utils.helpers import makedir
 from scipy.stats import norm
 
@@ -34,11 +34,13 @@ def main(config_path):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     x = torch.linspace(0., 1., 100, device=device)
-    log_sigma = torch.log(torch.tensor(2)) + 0.2*torch.randn((num_points, 1), device=device)
-    ell = F.relu(1 + 0.4*torch.randn((num_points, 1), device=device))
+    # log_sigma = torch.log(torch.tensor(2)) + 0.2*torch.randn((num_points, 1), device=device)
+    log_sigma = torch.log(torch.tensor(2))*torch.ones((num_points, 1), device=device)
+    # ell = F.relu(1 + 0.4*torch.randn((num_points, 1), device=device))
+    ell = torch.ones((num_points, 1), device=device)
 
-    a = sample_function(x, 
-                        batch_size= num_points, 
+    a = sample_true_function(x, 
+                        batch_size=num_points, 
                         log_sigma=log_sigma, 
                         ell=ell, 
                         nu=torch.tensor(0.5)*torch.ones(num_points, 1, device=device))
