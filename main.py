@@ -3,7 +3,7 @@ import os
 import yaml
 import numpy as np
 import torch
-from src.models import GMM, DarcySolver, G1D
+from src.models import GMM, DarcySolver, OrthogonalBasis, CosineBasis
 from src.sampling import Sampling
 from src.utils import makedir, sample_p_data, get_lr
 from src.utils import setup_logging
@@ -33,6 +33,7 @@ def main(config_path):
     num_steps = config['num_steps']
     step_size = config['step_size']
     epochs = config['epochs']
+    model = config['model']
 
     # Set the device for computation
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -46,15 +47,21 @@ def main(config_path):
     a = torch.tensor(np.load(a_path)).double().to(device)
     time = torch.linspace(0., 1., 100).to(device)
     pushforward = DarcySolver(time)
-    y_res = (y_values - y_values.mean(dim=0)).squeeze()
 
     data = y_values.view(-1, 1, len(time), channels)
     data = data[torch.randperm(data.size(0))]
 
     # Initialize models
     GMM_model = GMM(n_components, gmm_dim, width=1., std=1.).to(device)
-    G_model = G1D(gmm_dim, nu=0.5).to(device)
-
+    if model == 'DeepONet':
+        G_model = OrthogonalBasis(gmm_dim, nu=0.5).to(device)
+        print(f'Using {config["model"]} model')
+    elif model == 'cosine':
+        G_model = CosineBasis(gmm_dim, nu=0.5).to(device)
+        print(f'Using {config["model"]} model')
+    else:
+        raise ValueError(f"Unknown model type: {model}")
+    
     # Initialize the sampling runner
     runner = Sampling(G_model, GMM_model, sampler, likelihood, pushforward, time)
     runner.dataset = config['dataset']
@@ -65,7 +72,7 @@ def main(config_path):
     runner.lrG = config['lr_G']
 
     # Train the models
-    z_after = runner.train(data, epochs, batch_size, num_steps, step_size)
+    runner.train(data = data, n_iter = epochs, batch_size = batch_size, num_steps_post = num_steps, step_size_post = step_size)
 
     # Generate samples (optional)
     # output_prior, output_posterior = runner.generate_samples(data, num_gen_samples=100, n_iter=n_iter, num_steps_post=num_steps_post, step_size_post=step_size_post, ckpt='final')
