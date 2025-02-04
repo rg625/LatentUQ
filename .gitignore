@@ -25,6 +25,9 @@ env/
 *.swp
 *.swo
 
+# Ignore notebooks temporary
+*.ipynb
+
 # Ignore caches
 .cache/
 *.cache
