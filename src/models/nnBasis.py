@@ -7,21 +7,23 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 class nnBasis(nn.Module):
     def __init__(self, num_expansions):
         super(nnBasis, self).__init__()
-        self.features = 256
+        self.features = 64
         self.num_expansion = num_expansions
 
         self.coeff_matrix = nn.Sequential(
-            nn.Linear(1, self.features, bias=False), nn.Tanh(),
+            nn.Linear(1, self.features, bias=True), nn.Tanh(),
+            nn.Linear(self.features, self.features, bias=False), nn.Tanh(),
+            nn.Linear(self.features, self.features, bias=False), nn.Tanh(),
             nn.Linear(self.features, self.features, bias=False), nn.Tanh(),
             nn.Linear(self.features, self.features, bias=False), nn.Tanh(),
             nn.Linear(self.features, self.num_expansion, bias=False), 
         ).to(device)
     
     def forward(self, time):
-        raw_basis = self.coeff_matrix(torch.pi*torch.cos(time.view(-1, 1)))  # Raw basis before orthogonalization
+        raw_basis = self.coeff_matrix(time.view(-1, 1))  # Raw basis before orthogonalization
         orth_basis = self.orthogonalize(raw_basis)  # Enforce orthogonality
-        return orth_basis, self.smoothness_loss(orth_basis)
-
+        return orth_basis
+    
     def orthogonalize(self, W):
         Q, R = torch.linalg.qr(W)  # QR decomposition
         return Q  # Ensures W lies on the Stiefel manifold
@@ -31,4 +33,4 @@ class nnBasis(nn.Module):
         diff1 = output[:, 1:] - output[:, :-1]  # First-order difference
         diff2 = diff1[:, 1:] - diff1[:, :-1]  # Second-order difference
         smooth_loss = torch.mean(diff2 ** 2) + torch.mean(diff1 ** 2)
-        return 1000*smooth_loss
+        return 100*smooth_loss

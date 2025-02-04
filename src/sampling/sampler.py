@@ -104,7 +104,7 @@ class Sampling:
                                  testing=self.testing,
                                  num_samples=1000)
         
-        loss_g = -loss_g.mean().to(self.device) + smoothness
+        loss_g = -loss_g.mean().to(self.device) #+ smoothness #+ torch.mean(self.G.log_sigma(z_post.detach())**2)
         
         return loss_gmm, loss_g
 
