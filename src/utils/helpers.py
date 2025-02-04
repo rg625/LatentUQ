@@ -18,6 +18,8 @@ def weights_init_xavier(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
         nn.init.xavier_normal_(m.weight)
+    elif classname.find('LipschitzRegularizedLinear') != -1:
+        nn.init.xavier_normal_(m.linear.weight) 
     elif classname.find('Linear') != -1:
         nn.init.xavier_normal_(m.weight)
     elif classname.find('BatchNorm') != -1:
@@ -106,10 +108,10 @@ def emd(set1, set2):
     return emd_distance
 
 
-def smoothness_loss(outputs):
-    """
-    Computes a smoothness loss by penalizing large time derivatives.
-    """
-    diff = outputs[:, 1:] - outputs[:, :-1]  # Finite difference
-    loss = torch.mean(diff**2)  # Penalize large derivatives
-    return loss
+# Custom loss function for smoothness
+def smoothness_loss(output, indices, t):
+    grad_output_indices = torch.autograd.grad(outputs=output, inputs=indices, 
+                                              grad_outputs=torch.ones_like(output), create_graph=True)[0]
+    grad_output_t = torch.autograd.grad(outputs=output, inputs=t, 
+                                        grad_outputs=torch.ones_like(output), create_graph=True)[0]
+    return torch.mean(grad_output_indices ** 2) + torch.mean(grad_output_t ** 2)

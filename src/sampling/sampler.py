@@ -95,16 +95,16 @@ class Sampling:
                               means=means, 
                               lower_cholesky=lower_cholesky, 
                               weights=weights).mean().to(self.device)
-        loss_g = -log_likelohood(x=x,
+        loss_g, smoothness = log_likelohood(x=x,
                                  z=z_post.detach(),
                                  time=time,
                                  model=self.G,
                                  pushforward=self.pushforward,
                                  log_likelihood_sigma=self.log_likelihood_sigma,
                                  testing=self.testing,
-                                 num_samples=1000).mean().to(self.device)
+                                 num_samples=1000)
         
-        loss_g = loss_g #+ smoothness_loss(self.G(z_post.detach(), time, num_samples=1))
+        loss_g = -loss_g.mean().to(self.device) + smoothness
         
         return loss_gmm, loss_g
 
@@ -191,7 +191,8 @@ class Sampling:
             if epoch % 1 == 0:
                 save_model(dir_name, epoch, 'last_model', self.GMM, self.optGMM, self.lr_scheduleGMM, self.G, self.optG, self.lr_scheduleG)
                 logger.info(f'Saved model at epoch {epoch}')
-            elif epoch % 10 == 0:
+            
+            if epoch % 100 == 0:
                 save_model(dir_name, epoch, f'{epoch}_model', self.GMM, self.optGMM, self.lr_scheduleGMM, self.G, self.optG, self.lr_scheduleG)
                 logger.info(f'Saved model at epoch {epoch}')
             self.lr_scheduleGMM.step()

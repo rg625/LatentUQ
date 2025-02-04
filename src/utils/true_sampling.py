@@ -43,4 +43,5 @@ def sample_true_function(
     spectral_weights = compute_spectral_weights(gamma_scaling, ell, j, d, nu).unsqueeze(1).expand(-1, num_samples, -1)
     random_weights_cos = torch.randn_like(spectral_weights, device=device)
 
-    return F.softplus(torch.einsum('bSJ, bStJ -> Sbt', spectral_weights * random_weights_cos, cosines)).squeeze()
+    # return F.softplus(torch.einsum('bSJ, bStJ -> Sbt', spectral_weights * random_weights_cos, cosines)).squeeze()
+    return (torch.einsum('bSJ, bStJ -> Sbt', spectral_weights * random_weights_cos, cosines)).squeeze()

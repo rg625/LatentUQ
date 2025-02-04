@@ -23,10 +23,10 @@ def log_likelohood(**kwargs):
         num_samples = 1
 
     # print(testing)
-    a = model.sample_function(time, z, num_samples=num_samples)
+    a, smoothness = model.sample_function(time, z, num_samples=num_samples)
     x = x.unsqueeze(0).expand(num_samples, -1, -1)
     log_p_y_given_z = gaussian_likelihood(x = x.squeeze(), x_hat = pushforward(a), sigma = log_likelihood_sigma)
-    return torch.logsumexp(log_p_y_given_z, dim=0)
+    return torch.logsumexp(log_p_y_given_z, dim=0), smoothness
 
 def log_post(**kwargs):
     """
@@ -51,7 +51,7 @@ def log_post(**kwargs):
         pushforward=pushforward,
         log_likelihood_sigma=log_likelihood_sigma,
         testing=testing
-    ) + log_prior(z = z, means = means, lower_cholesky = lower_cholesky, weights = weights)
+    )[0] + log_prior(z = z, means = means, lower_cholesky = lower_cholesky, weights = weights)
 
 def grad_log(z, log_dist, max_value=1e3):
     """
