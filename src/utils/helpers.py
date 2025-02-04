@@ -106,12 +106,3 @@ def emd(set1, set2):
     emd_distance = ot.emd2(a, b, cost_matrix, numItermax=1000000)
 
     return emd_distance
-
-
-# Custom loss function for smoothness
-def smoothness_loss(output, indices, t):
-    grad_output_indices = torch.autograd.grad(outputs=output, inputs=indices, 
-                                              grad_outputs=torch.ones_like(output), create_graph=True)[0]
-    grad_output_t = torch.autograd.grad(outputs=output, inputs=t, 
-                                        grad_outputs=torch.ones_like(output), create_graph=True)[0]
-    return torch.mean(grad_output_indices ** 2) + torch.mean(grad_output_t ** 2)
