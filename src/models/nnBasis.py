@@ -9,37 +9,26 @@ class nnBasis(nn.Module):
         super(nnBasis, self).__init__()
         self.features = 256
         self.num_expansion = num_expansions
-        # Common feature extractor
-        self.feature_extractor = nn.Sequential(
-            nn.Linear(1, self.features), nn.Tanh(),
-            nn.Linear(self.features, self.features), nn.Tanh()
+
+        self.coeff_matrix = nn.Sequential(
+            nn.Linear(1, self.features, bias=False), nn.Tanh(),
+            nn.Linear(self.features, self.features, bias=False), nn.Tanh(),
+            nn.Linear(self.features, self.features, bias=False), nn.Tanh(),
+            nn.Linear(self.features, self.num_expansion, bias=False), 
         ).to(device)
-        
-        # Learnable coefficient matrix (before orthogonalization)
-        self.coeff_matrix = nn.Linear(self.features, self.num_expansion, bias=False).to(device)
-        
-    def forward(self, x):
-        features = self.feature_extractor(x.view(-1, 1))  # Shared feature space
-        raw_basis = self.coeff_matrix(features)  # Raw basis before orthogonalization
-        orth_basis = self.gram_schmidt_process(raw_basis)  # Enforce orthogonality
+    
+    def forward(self, time):
+        raw_basis = self.coeff_matrix(torch.pi*torch.cos(time.view(-1, 1)))  # Raw basis before orthogonalization
+        orth_basis = self.orthogonalize(raw_basis)  # Enforce orthogonality
         return orth_basis, self.smoothness_loss(orth_basis)
 
-    def gram_schmidt_process(self, vectors):
-        """Enforces orthogonality on output vectors using Gram-Schmidt."""
-        basis = []
-        for v in vectors.T:  # Iterate over each basis function (column-wise)
-            w = v.clone()  # Create a clone of the vector to avoid modifying the original
-            for w_ in basis:
-                dot_product = torch.dot(w_, v)
-                w = w - dot_product / torch.dot(w_, w_) * w_
-            norm = torch.norm(w) + 1e-8  # Add a small value to avoid division by zero
-            w = w/norm  # Normalize to unit norm
-            basis.append(w)
-        return torch.stack(basis, dim=1)  # Stack to form orthonormal basis
+    def orthogonalize(self, W):
+        Q, R = torch.linalg.qr(W)  # QR decomposition
+        return Q  # Ensures W lies on the Stiefel manifold
     
     def smoothness_loss(self, output):
         # Compute second-order differences for smoothness loss
         diff1 = output[:, 1:] - output[:, :-1]  # First-order difference
         diff2 = diff1[:, 1:] - diff1[:, :-1]  # Second-order difference
-        smooth_loss = torch.mean(diff2 ** 2)
-        return smooth_loss
+        smooth_loss = torch.mean(diff2 ** 2) + torch.mean(diff1 ** 2)
+        return 1000*smooth_loss

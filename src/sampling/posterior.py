@@ -95,6 +95,7 @@ def langevin(**kwargs):
     plot = kwargs.get('plot', False)
     sampler = kwargs.get('sampler', 'ula')
     testing = kwargs.get('testing', False)
+    last_samples = 5
 
     z.requires_grad_(True)
     acceptance_count = torch.zeros_like(torch.empty(z.shape[0], 1)).to(device)
@@ -109,7 +110,7 @@ def langevin(**kwargs):
         ULA_chain_z[0] = z.detach()
         ULA_chain_x[0] = model(z, time).detach()
 
-    average = torch.zeros((num_steps//2, *z.size())).to(device)
+    average = torch.zeros((num_steps//last_samples, *z.size())).to(device)
     for i in range(num_steps):
         log_dist = log_post(
             x=x,
@@ -129,8 +130,8 @@ def langevin(**kwargs):
         if sampler == 'ula':  # If using the Unadjusted Langevin Algorithm (ULA)
             z = update_z(z, step_size, grad_log_dist)
             check_nans(z)
-            if num_steps-i<num_steps//2:
-                average[i-num_steps//2] = z
+            if num_steps-i<num_steps//last_samples:
+                average[i-(num_steps-num_steps//last_samples)] = z
         else:  # If using the Metropolis-Adjusted Langevin Algorithm (MALA)
             z_proposed = update_z(z, step_size, grad_log_dist)
             log_dist_new = log_post(
