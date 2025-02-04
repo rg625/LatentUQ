@@ -3,7 +3,7 @@ import os
 import yaml
 import numpy as np
 import torch
-from src.models import GMM, DarcySolver, OrthogonalBasis, CosineBasis
+from src.models import GMM, DarcySolver, OrthogonalBasis, CosineBasis, Integrator
 from src.sampling import Sampling
 from src.utils import makedir, sample_p_data, get_lr
 from src.utils import setup_logging
@@ -34,27 +34,31 @@ def main(config_path):
     step_size = config['step_size']
     epochs = config['epochs']
     model = config['model']
-
+    dataset = config['dataset']
+    num_expansions = config['num_expansions']
     # Set the device for computation
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
     # Load the data
-    y_values_path = os.path.join(data_dir, 'poisson_y.npy')
-    a_path = os.path.join(data_dir, 'poisson_a.npy')
+    y_values_path = os.path.join(data_dir, f'{dataset}_y.npy')
+    a_path = os.path.join(data_dir, f'{dataset}_a.npy')
 
     y_values = torch.tensor(np.load(y_values_path)).double().to(device)
     a = torch.tensor(np.load(a_path)).double().to(device)
     time = torch.linspace(0., 1., 100).to(device)
-    pushforward = DarcySolver(time)
-
+    if dataset == 'poisson':
+        pushforward = DarcySolver(time)
+    elif dataset == 'ode':
+        pushforward = Integrator(time)
+        
     data = y_values.view(-1, 1, len(time), channels)
     data = data[torch.randperm(data.size(0))]
 
     # Initialize models
     GMM_model = GMM(n_components, gmm_dim, width=1., std=1.).to(device)
     if model == 'DeepONet':
-        G_model = OrthogonalBasis(gmm_dim, nu=0.5).to(device)
+        G_model = OrthogonalBasis(gmm_dim, num_expansions, nu=0.5).to(device)
         print(f'Using {config["model"]} model')
     elif model == 'cosine':
         G_model = CosineBasis(gmm_dim, nu=0.5).to(device)
@@ -64,7 +68,7 @@ def main(config_path):
     
     # Initialize the sampling runner
     runner = Sampling(G_model, GMM_model, sampler, likelihood, pushforward, time)
-    runner.dataset = config['dataset']
+    runner.dataset = dataset
     runner.log_likelihood_sigma = config['sigma_y']
     runner.plot = config['plot']
     runner.true_coeffs = a
